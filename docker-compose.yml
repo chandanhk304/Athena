@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # DATA TIER
+  # ---------------------------------------------------------------------------
+  neo4j:
+    image: neo4j:5.18.0
+    container_name: athena-neo4j
+    restart: always
+    environment:
+      - NEO4J_AUTH=neo4j/athena_secret_password
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+    ports:
+      - "7474:7474" # HTTP Browser
+      - "7687:7687" # Bolt
+    volumes:
+      - neo4j_data:/data
+    profiles: ["dev", "demo"]
+
+  chromadb:
+    image: chromadb/chroma:0.4.24
+    container_name: athena-chromadb
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    profiles: ["dev", "demo"]
+
+  # ---------------------------------------------------------------------------
+  # LOCAL LLM INFERENCE (DEMO MODE ONLY)
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: athena-ollama
+    restart: always
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # If no GPU is available, remove the deploy block above for CPU fallback
+    profiles: ["demo"]
+
+  # ---------------------------------------------------------------------------
+  # APPLICATION TIER
+  # ---------------------------------------------------------------------------
+  # To be added during Phase 3.6 (sim-api, sim-chaos, athena-core, dashboard)
+
+volumes:
+  neo4j_data:
+  chroma_data:
+  ollama_models:
+  sqlite_data:
